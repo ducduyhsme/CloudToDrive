@@ -1,39 +1,53 @@
-# 🚀 Google Colab Multi-Link Downloader (Powered by JDownloader 2)
+<div align="center">
 
-Ứng dụng tải file đa nguồn chuyên nghiệp chạy trực tiếp trên **Google Colab**, sử dụng engine chính thức **JDownloader 2 (JD2) Headless** kết hợp giao diện đồ họa trực quan xây dựng bằng `ipywidgets` theo đúng thiết kế bạn yêu cầu:
-- **Hỗ trợ 1000+ hoster**: Fshare, Rapidgator, 1fichier, Mediafire, Mega, Google Drive, DDownload, Turbobit, YouTube,... tận dụng kho plugin được cập nhật liên tục của JDownloader.
-- **Không bắt buộc tạo tài khoản**: JDownloader 2 được cấu hình tự động mở cổng **Local RemoteAPI (3128)** trên Colab và kết nối nội bộ qua `myjdapi`.
-- **Hỗ trợ MyJDownloader (Tùy chọn)**: Cho phép cấu hình tài khoản `my.jdownloader.org` nếu bạn cần giải captcha từ xa cho các hoster bảo vệ cao.
-- **Nút "Resolve Links"** (xanh lá): Quét link qua JDownloader LinkGrabber, trích xuất tên file thật, dung lượng và hiển thị bảng **Queue Preview**.
-- **Nút "Quick Download"** (xanh dương): Tự động quét và tải ngay lập tức, bỏ qua Queue Preview.
-- **Bảng Queue Preview**: Đầy đủ các nút chức năng: `▲ Up`, `▼ Down`, `Sort A-Z`, `Select All`, `None`, `▶ Start Download`, `Cancel`, `Remove`.
-- **Tự động chuyển Google Drive**: File sau khi tải về server Colab sẽ được tự động chuyển vào thư mục `Downloads` trên **Google Drive** của bạn, đồng thời dọn dẹp file tạm trên Colab để chống tràn bộ nhớ.
+# 🚀 CloudToDrive
 
----
+<p align="center">
+  <b>High-speed multi-source downloader powered by JDownloader 2 Headless with automated Google Drive sync</b>
+</p>
 
-## 📁 Cấu trúc thư mục
+[![English](https://img.shields.io/badge/Language-English-blue?style=for-the-badge)](README.md)
+[![Tiếng Việt](https://img.shields.io/badge/Language-Ti%E1%BA%BFng_Vi%E1%BB%87t-lightgrey?style=for-the-badge)](docs/README_VI.md)
 
-- [`colab_downloader.py`](colab_downloader.py): Mã nguồn Python tích hợp JDownloader 2 Headless (`JD2Service`), giao diện `ipywidgets` và bộ chuyển Google Drive an toàn.
-- [`Colab_Downloader.ipynb`](Colab_Downloader.ipynb): File Jupyter Notebook đã được cấu hình sẵn 2 cell, chỉ cần tải lên Colab và bấm chạy.
-- [`test_downloader.py`](test_downloader.py): Bộ kiểm thử tự động (Unit Test) kiểm tra cấu hình JD2, mock LinkGrabber, thao tác hàng đợi và chuyển file Drive.
+</div>
 
 ---
 
-## ⚡ Hướng dẫn sử dụng trên Google Colab
+## 📖 Overview
 
-### Cách 1: Tải trực tiếp file `.ipynb` lên Colab (Khuyên dùng)
-1. Truy cập [Google Colab](https://colab.research.google.com/).
-2. Chọn **Upload** (Tải lên) → Chọn file [`Colab_Downloader.ipynb`](Colab_Downloader.ipynb).
-3. Bấm **Runtime** → **Run all** (hoặc chạy lần lượt Cell 1 và Cell 2).
-4. Cấp quyền truy cập Google Drive khi Colab yêu cầu kết nối.
-5. Giao diện tải sẽ xuất hiện trực tiếp ngay trong Cell 2.
+**CloudToDrive** is a universal multi-hoster download manager designed for cloud runtime environments (such as Google Colab, Jupyter servers, and remote VPS). Powered by the official **JDownloader 2 (JD2) Headless** daemon and an interactive `ipywidgets` GUI, it crawls, resolves, and batches links from over **1,000+ file hosting providers**, and automatically transfers downloaded files directly to your **Google Drive `Downloads/`** folder.
 
 ---
 
-### Cách 2: Chạy trực tiếp từ mã nguồn trong Notebook mới
-Nếu bạn muốn tạo một Notebook mới trên Colab, chỉ cần tạo 2 cell:
+## ✨ Key Features
 
-#### Cell 1: Mount Google Drive & Cài đặt môi trường
+- **1,000+ File Hosting Providers Supported**: Rapidgator, 1fichier, MediaFire, Mega, Google Drive, DDownload, Turbobit, Fshare, YouTube, Pixeldrain, Gofile, and more — leveraging continuously updated official JDownloader 2 plugins.
+- **Interactive Web / Notebook GUI**:
+  - **Multi-line Links Input**: Paste multiple URLs at once (one per line).
+  - **"Resolve Links" (Green)**: Triggers JDownloader LinkGrabber to crawl URLs, inspect real filenames, file sizes, and populates the **Queue Preview**.
+  - **Queue Preview Management**: Full toolbar with `▲ Up`, `▼ Down`, `Sort A-Z`, `Select All`, `None`, `▶ Start Download`, `Cancel`, and `Remove`.
+  - **"Quick Download" (Blue)**: One-click fully automated resolving and downloading directly without opening the Queue Preview.
+- **No Account Required**: Runs via JDownloader 2's **Local RemoteAPI (Port 3128)** on `127.0.0.1` using `myjdapi`.
+- **Optional MyJDownloader Integration**: Supports connecting your `my.jdownloader.org` account for remote captcha solving via mobile app/web for captcha-protected hosters.
+- **Automated Google Drive Sync & Disk Guard**: Automatically transfers completed files into `/content/drive/MyDrive/Downloads/` and cleans up temporary local files immediately to prevent running out of disk space.
+
+---
+
+## ⚡ Quick Start
+
+### Method 1: Upload and Run `.ipynb` (Recommended)
+1. Open [Google Colab](https://colab.research.google.com/).
+2. Select **Upload** → Upload [`Colab_Downloader.ipynb`](Colab_Downloader.ipynb).
+3. Click **Runtime** → **Run all** (or execute Cell 1 and Cell 2 sequentially).
+4. Grant Google Drive access permissions when prompted.
+5. The interactive GUI will display directly in Cell 2.
+
+---
+
+### Method 2: Manual Setup in a New Notebook
+Create two cells in your notebook:
+
+#### Cell 1: Mount Google Drive & Install Environment
 ```python
 from google.colab import drive
 drive.mount('/content/drive')
@@ -42,13 +56,45 @@ drive.mount('/content/drive')
 !pip install -q --upgrade myjdapi ipywidgets requests
 ```
 
-#### Cell 2: Chạy mã nguồn Downloader
-Sao chép toàn bộ nội dung từ file [`colab_downloader.py`](colab_downloader.py) dán vào Cell 2 và bấm Run.
+#### Cell 2: Run the Downloader Application
+Copy and paste the entire code from [`colab_downloader.py`](colab_downloader.py) into Cell 2 and run it.
 
 ---
 
-## ⚙️ Cơ chế hoạt động của JDownloader 2 trên Colab
-1. **Khởi tạo**: Script tự động kiểm tra Java, tải file `JDownloader.jar` chính thức từ máy chủ JDownloader và cấu hình mở cổng Local API `127.0.0.1:3128`.
-2. **LinkGrabber / Crawler**: Khi người dùng nhấn **"Resolve Links"**, script gửi liên kết tới JD2, chờ crawler xử lý và nhận lại danh sách tên file, dung lượng chính xác từ server chứa file.
-3. **Download Engine**: JD2 tải đa luồng (multi-chunk) về thư mục tạm `/content/temp_downloads/`.
-4. **Google Drive Sync**: Một tiến trình nền theo dõi tiến độ tải, ngay khi từng file hoàn tất, nó sẽ di chuyển ngay vào `/content/drive/MyDrive/Downloads/` và xóa file tạm trên ổ đĩa Colab.
+## 📁 Repository Structure
+
+```
+├── Colab_Downloader.ipynb   # Ready-to-run Jupyter / Colab Notebook
+├── colab_downloader.py      # Core Python application with GUI & JD2 service
+├── test_downloader.py       # Automated unit tests for JD2 config, queue & transfers
+├── docs/
+│   └── README_VI.md         # Vietnamese documentation
+├── README.md                # English documentation (this file)
+└── .gitignore               # Git ignore configuration
+```
+
+---
+
+## ⚙️ How It Works
+
+1. **Bootstrap & Service Init**: The script verifies Java JRE, fetches official `JDownloader.jar`, writes `org.jdownloader.api.RemoteAPIConfig.json` (opening local port `3128`), and launches the headless daemon.
+2. **LinkGrabber & Decryption**: When clicking **"Resolve Links"**, URLs are fed into JDownloader's LinkGrabber. The crawler contacts hosters and retrieves true filenames and exact file sizes.
+3. **Multi-Chunk Download**: JDownloader 2 downloads files using multi-connection chunking to local buffer directory `/content/temp_downloads/`.
+4. **Google Drive Sync**: A background worker monitors active transfers. As each file finishes, it streams the file into `/content/drive/MyDrive/Downloads/` and deletes the local temporary copy to keep storage clean.
+
+---
+
+## 🧪 Testing
+
+Run the automated test suite locally:
+```bash
+python test_downloader.py
+```
+All unit tests verify filename sanitization, size formatting, configuration generation, mock LinkGrabber queues, and Google Drive buffered transfers.
+
+---
+
+## 📝 License
+
+This project is open-source and licensed under the [MIT License](LICENSE).
+All download decrypters and hoster plugins are powered by the official [JDownloader 2](https://jdownloader.org/) engine.
