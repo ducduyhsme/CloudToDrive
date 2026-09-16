@@ -10,16 +10,33 @@ import unittest
 import tempfile
 import shutil
 import json
+import types
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from colab_downloader import (
-    JD2Service,
-    ColabDownloaderApp,
-    transfer_to_google_drive,
-    sanitize_filename,
-    format_size
-)
+# Dynamically load the all-in-one engine directly from Colab_Downloader.ipynb
+_nb_path = os.path.join(os.path.dirname(__file__), "Colab_Downloader.ipynb")
+with open(_nb_path, "r", encoding="utf-8") as _nb_f:
+    _nb_data = json.load(_nb_f)
+
+_cell_code = "".join(_nb_data["cells"][2]["source"])
+_clean_code = "\n".join([_line for _line in _cell_code.splitlines() if not _line.strip().startswith("!")])
+
+_mod = types.ModuleType("colab_downloader")
+_mod.__file__ = os.path.abspath(_nb_path)
+exec(_clean_code, _mod.__dict__)
+sys.modules["colab_downloader"] = _mod
+
+JD2Service = _mod.JD2Service
+ColabDownloaderApp = _mod.ColabDownloaderApp
+transfer_to_google_drive = _mod.transfer_to_google_drive
+sanitize_filename = _mod.sanitize_filename
+format_size = _mod.format_size
+get_colab_disk_info = _mod.get_colab_disk_info
+resolve_yandex_disk_direct_link = _mod.resolve_yandex_disk_direct_link
+download_direct = _mod.download_direct
+
+
 
 
 class MockLinkgrabber:
@@ -125,6 +142,16 @@ class TestJD2Downloader(unittest.TestCase):
             data = json.load(f)
             self.assertTrue(data.get("deprecatedapienabled"))
 
+        with open(general_cfg, "r") as f:
+            general_data = json.load(f)
+            self.assertIn("Downloads", general_data.get("defaultdownloadfolder"))
+            self.assertFalse(general_data.get("createpreallocatedlargefiles"))
+            self.assertFalse(general_data.get("createpreallocatedlargefilesenabled"))
+            self.assertFalse(general_data.get("useallocatesparsefile"))
+            self.assertEqual(general_data.get("maxchunksperserver"), 1)
+            self.assertEqual(general_data.get("maxchunksperdownload"), 1)
+            self.assertEqual(general_data.get("maxsimultanousdownloads"), 1)
+
         with open(myjd_cfg, "r") as f:
             data = json.load(f)
             self.assertEqual(data.get("email"), "user@test.com")
@@ -142,6 +169,7 @@ class TestJD2Downloader(unittest.TestCase):
         self.assertEqual(len(app.pending_items), 2)
         self.assertEqual(len(app.queue_list.options), 2)
         self.assertIn("video.mp4", app.queue_list.options[0])
+        self.assertIn("MyDrive/Downloads/", app.queue_list.options[0])
 
         # Test Sort
         app._on_queue_sort()
@@ -158,6 +186,12 @@ class TestJD2Downloader(unittest.TestCase):
         app._on_queue_remove()
         self.assertEqual(len(app.pending_items), 1)
 
+    def test_insert_sample_link(self):
+        mock_service = MockJDService(self.test_dir)
+        app = ColabDownloaderApp(jd_service=mock_service)
+        app._on_insert_sample()
+        self.assertIn("https://disk.yandex.com/d/7OcBsRWfzoTozg", app.text_area.value)
+
     def test_transfer_to_google_drive(self):
         src_file = os.path.join(self.local_temp, "downloaded_package.bin")
         payload = b"JD2 Payload Bytes " * 1024 * 512
@@ -171,6 +205,47 @@ class TestJD2Downloader(unittest.TestCase):
         self.assertFalse(os.path.exists(src_file))  # Ensure cleaned up
         self.assertEqual(os.path.getsize(dest_path), len(payload))
 
+    def test_yandex_disk_sample_link(self):
+        import requests
+        sample_url = "https://disk.yandex.com/d/7OcBsRWfzoTozg"
+        api_url = f"https://cloud-api.yandex.net/v1/disk/public/resources?public_key={sample_url}"
+        resp = requests.get(api_url, timeout=15)
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertTrue(data.get("name", "").endswith(".rar"))
+        self.assertGreater(data.get("size", 0), 1024 * 1024 * 1000)  # ~9.55 GB
+
+    def test_get_colab_disk_info(self):
+        info = get_colab_disk_info()
+        self.assertIn("total_gb", info)
+        self.assertIn("used_gb", info)
+        self.assertIn("free_gb", info)
+        self.assertGreater(info["total_gb"], 0)
+
+    def test_resolve_yandex_disk_direct_link(self):
+        sample_url = "https://disk.yandex.com/d/7OcBsRWfzoTozg"
+        res = resolve_yandex_disk_direct_link(sample_url)
+        self.assertIsNotNone(res)
+        dl_url, fname, fsize = res
+        self.assertTrue(dl_url.startswith("http"))
+        self.assertTrue(fname.endswith(".rar"))
+        self.assertGreater(fsize, 1024 * 1024 * 1000)
+
+    def test_download_direct_empty_urls(self):
+        res = download_direct("")
+        self.assertFalse(res["success"])
+        self.assertIn("No URLs", res["error"])
+
+
+    def test_app_disk_info_widget(self):
+        mock_service = MockJDService(self.test_dir)
+        app = ColabDownloaderApp(jd_service=mock_service)
+        self.assertIsNotNone(app.disk_info_widget)
+        self.assertIn("Dung lượng Colab", app.disk_info_widget.value)
+        self.assertIn("GB", app.disk_info_widget.value)
+
 
 if __name__ == "__main__":
     unittest.main()
+
+
