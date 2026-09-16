@@ -234,8 +234,19 @@ class TestJD2Downloader(unittest.TestCase):
     def test_download_direct_empty_urls(self):
         res = download_direct("")
         self.assertFalse(res["success"])
-        self.assertIn("No URLs", res["error"])
+        self.assertEqual(len(res["files"]), 0)
 
+    def test_myjd_login_ui(self):
+        mock_service = MockJDService(self.test_dir)
+        app = ColabDownloaderApp(jd_service=mock_service)
+        self.assertTrue(hasattr(app, "btn_login"))
+        self.assertEqual(app.btn_login.description, "Login")
+
+        # Test empty credentials check
+        app.myjd_email.value = ""
+        app.myjd_pass.value = ""
+        app._on_login_myjd()
+        self.assertIn("Vui lòng nhập đầy đủ", app.status_label.value)
 
     def test_app_disk_info_widget(self):
         mock_service = MockJDService(self.test_dir)
