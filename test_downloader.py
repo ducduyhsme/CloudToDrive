@@ -35,6 +35,8 @@ format_size = _mod.format_size
 get_colab_disk_info = _mod.get_colab_disk_info
 resolve_yandex_disk_direct_link = _mod.resolve_yandex_disk_direct_link
 download_direct = _mod.download_direct
+save_credentials_to_drive = _mod.save_credentials_to_drive
+load_credentials_from_drive = _mod.load_credentials_from_drive
 
 
 
@@ -240,13 +242,20 @@ class TestJD2Downloader(unittest.TestCase):
         mock_service = MockJDService(self.test_dir)
         app = ColabDownloaderApp(jd_service=mock_service)
         self.assertTrue(hasattr(app, "btn_login"))
-        self.assertEqual(app.btn_login.description, "Login")
+        self.assertIn("Login", app.btn_login.description)
 
         # Test empty credentials check
         app.myjd_email.value = ""
         app.myjd_pass.value = ""
         app._on_login_myjd()
         self.assertIn("Vui lòng nhập đầy đủ", app.status_label.value)
+
+        # Test Drive persistence functions
+        save_credentials_to_drive("colab_user@test.com", "mypass123", "Test_Device")
+        loaded = load_credentials_from_drive()
+        self.assertEqual(loaded.get("email"), "colab_user@test.com")
+        self.assertEqual(loaded.get("password"), "mypass123")
+
 
     def test_app_disk_info_widget(self):
         mock_service = MockJDService(self.test_dir)
