@@ -101,10 +101,14 @@ class MockDownloadController:
 class MockDownloads:
     def __init__(self):
         self.links = []
+        self.packages = []
         self.force_called = 0
 
     def query_links(self, params=None):
         return list(self.links)
+
+    def query_packages(self, params=None):
+        return list(self.packages)
 
     def force_download(self, link_ids=None, package_ids=None):
         self.force_called += 1
@@ -351,6 +355,43 @@ class TestJD2Downloader(unittest.TestCase):
         done, cycles = app._monitor_tick([1001], [500], completed, 1)
         self.assertTrue(done)
         self.assertIn("done_file.mp4", completed)
+        self.assertEqual(app.progress_bar.value, 100.0)
+
+    def test_monitor_tick_auto_extraction_and_completion(self):
+        mock_service = MockJDService(self.test_dir)
+        app = ColabDownloaderApp(jd_service=mock_service)
+
+        # 1. Simulating Extraction in progress
+        mock_service.device.downloads.links = [{
+            "uuid": 2001,
+            "name": "archive.rar",
+            "bytesTotal": 1024 * 1024 * 500,
+            "bytesLoaded": 1024 * 1024 * 500,
+            "speed": 0,
+            "running": False,
+            "finished": False,
+            "status": "Extracting..."
+        }]
+
+        completed = set()
+        done, cycles = app._monitor_tick([2001], [600], completed, 2)
+        self.assertFalse(done)
+        self.assertEqual(app.progress_bar.description, "Extracting...")
+        self.assertIn("giải nén", app.status_label.value)
+
+        # 2. Simulating Extraction completed and links cleaned up
+        mock_service.device.downloads.links = [{
+            "uuid": 2001,
+            "name": "archive.rar",
+            "bytesTotal": 1024 * 1024 * 500,
+            "bytesLoaded": 1024 * 1024 * 500,
+            "speed": 0,
+            "running": False,
+            "finished": True,
+            "status": "Extraction: OK"
+        }]
+        done, cycles = app._monitor_tick([2001], [600], completed, 3)
+        self.assertTrue(done)
         self.assertEqual(app.progress_bar.value, 100.0)
 
 
