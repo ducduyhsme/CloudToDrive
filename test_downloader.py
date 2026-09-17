@@ -78,16 +78,36 @@ class MockLinkgrabber:
 
 
 class MockDownloadController:
+    def __init__(self):
+        self.state = "STOPPED"
+        self.start_called = 0
+        self.force_called = 0
+
     def start_downloads(self):
-        pass
+        self.state = "RUNNING"
+        self.start_called += 1
+
+    def get_current_state(self):
+        return self.state
+
+    def force_download(self, link_ids=None, package_ids=None):
+        self.state = "RUNNING"
+        self.force_called += 1
 
     def get_speed_in_bytes(self):
         return 1024 * 1024 * 15  # 15 MB/s
 
 
 class MockDownloads:
+    def __init__(self):
+        self.links = []
+        self.force_called = 0
+
     def query_links(self, params=None):
-        return []
+        return list(self.links)
+
+    def force_download(self, link_ids=None, package_ids=None):
+        self.force_called += 1
 
 
 class MockJDDevice:
@@ -263,6 +283,75 @@ class TestJD2Downloader(unittest.TestCase):
         self.assertIsNotNone(app.disk_info_widget)
         self.assertIn("Dung lượng Colab", app.disk_info_widget.value)
         self.assertIn("GB", app.disk_info_widget.value)
+
+    def test_queue_start_auto_kicks_stopped_state(self):
+        mock_service = MockJDService(self.test_dir)
+        app = ColabDownloaderApp(jd_service=mock_service)
+
+        # Setup pending items
+        app.pending_items = [{
+            "uuid": 1001,
+            "packageUUID": 500,
+            "name": "large_archive.zip",
+            "bytesTotal": 1024 * 1024 * 100,
+            "url": "https://example.com/test.zip"
+        }]
+        app.update_queue_display()
+        app.queue_list.value = (app.queue_list.options[0],)
+
+        # Ensure start state is STOPPED
+        mock_service.device.downloadcontroller.state = "STOPPED"
+        self.assertEqual(mock_service.device.downloadcontroller.get_current_state(), "STOPPED")
+
+        # Trigger start download
+        app._on_queue_start()
+
+        # Downloadcontroller should be actively transitioned to RUNNING
+        self.assertEqual(mock_service.device.downloadcontroller.get_current_state(), "RUNNING")
+        self.assertGreaterEqual(mock_service.device.downloadcontroller.start_called, 1)
+
+        # Test _monitor_tick auto-kick when controller dropped to STOPPED
+        mock_service.device.downloadcontroller.state = "STOPPED"
+        mock_service.device.downloads.links = [{
+            "uuid": 1001,
+            "name": "large_archive.zip",
+            "bytesTotal": 1000,
+            "bytesLoaded": 500,
+            "speed": 1024 * 1024 * 5,
+            "running": True,
+            "finished": False,
+            "status": "Downloading..."
+        }]
+
+        completed = set()
+        done, cycles = app._monitor_tick([1001], [500], completed, 0)
+        self.assertFalse(done)
+        # Verify controller was auto-kicked back to RUNNING
+        self.assertEqual(mock_service.device.downloadcontroller.get_current_state(), "RUNNING")
+        self.assertIn("50%", app.progress_bar.description)
+        self.assertIn("Streaming", app.status_label.value)
+        self.assertIn("large_archive.zip", app.status_label.value)
+
+    def test_monitor_tick_completion(self):
+        mock_service = MockJDService(self.test_dir)
+        app = ColabDownloaderApp(jd_service=mock_service)
+
+        mock_service.device.downloads.links = [{
+            "uuid": 1001,
+            "name": "done_file.mp4",
+            "bytesTotal": 5000,
+            "bytesLoaded": 5000,
+            "speed": 0,
+            "running": False,
+            "finished": True,
+            "status": "Finished"
+        }]
+
+        completed = set()
+        done, cycles = app._monitor_tick([1001], [500], completed, 1)
+        self.assertTrue(done)
+        self.assertIn("done_file.mp4", completed)
+        self.assertEqual(app.progress_bar.value, 100.0)
 
 
 if __name__ == "__main__":
